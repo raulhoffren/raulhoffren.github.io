@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    
+    <!-- Elaborado por R.Hoffren (2019) - Master en TIG (Universidad de Zaragoza) -->
+    <!-- Este codigo crea un visor web avanzado realizado en QGIS usando JavaScript -->
+        
+    <!-- Enlace al fichero de estilos css -->
+    <link rel="stylesheet" href="advanced_files/css/leaflet_adv.css">
+    <link rel="stylesheet" href="advanced_files/css/L.Control.Locate.min.css">
+    <link rel="stylesheet" href="advanced_files/css/qgis2web.css">
+    <link rel="stylesheet" href="advanced_files/css/fontawesome-all.min.css">
+    <link rel="stylesheet" href="advanced_files/css/leaflet-search.css">
+    <link rel="stylesheet" href="advanced_files/css/leaflet-measure.css">
+    
+    <!-- Enlace al archivo JavaScript de leaflet -->
+    <script src="advanced_files/js/qgis2web_expressions.js"></script>
+    <script src="advanced_files/js/leaflet.js"></script>
+    <script src="advanced_files/js/L.Control.Locate.min.js"></script>
+    <script src="advanced_files/js/leaflet.rotatedMarker.js"></script>
+    <script src="advanced_files/js/leaflet.pattern.js"></script>
+    <script src="advanced_files/js/leaflet-hash.js"></script>
+    <script src="advanced_files/js/Autolinker.min.js"></script>
+    <script src="advanced_files/js/rbush.min.js"></script>
+    <script src="advanced_files/js/labelgun.min.js"></script>
+    <script src="advanced_files/js/labels.js"></script>
+    <script src="advanced_files/js/leaflet-measure.js"></script>
+    <script src="advanced_files/js/proj4.js"></script>
+    <script src="advanced_files/js/proj4leaflet.js"></script>
+    <script src="advanced_files/js/leaflet-search.js"></script>
+    <script src="advanced_files/data/ComarcasagrariasdeNavarra_1.js"></script>
+    <script src="advanced_files/data/Reddeobservatoriosclimticos_2.js"></script>
+    
+    <!-- Estilo general de la pagina del visor avanzado -->
+    <style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+            background-color: #1F1F1F;
+        }
+    </style>
+    
+    <title>Raúl Hoffrén Personal Website | Advanced visor</title>
+  </head>
+  <body>
+    
+    <!-- FRAME SUPERIOR -->
+    <div id="frame sup">
+      <h1> <b>Raúl Hoffrén | Personal Website</b> </h1>
+      <hr style="color: #000000;" size="2">
+      <p> - Advanced Geo Visor - </p>
+      <h6>
+        <a href="index.html"><img src="index_files/images/home2.png" alt="home" title="home" style="width: 30px; height: 30px"></a>
+        <a href="simple_visor.html"><img src="index_files/images/visor_s.jpg" alt="simplevisor" title="Advanced visor" style="width: 30px; height: 30px"></a>
+      </h6>
+      <h2>
+        <b>Mapa de la red de observatorios climáticos de la Comunidad Foral de Navarra<br>
+        </b>
+      </h2>
+      <b>
+        <i>
+        Se muestran también las Comarcas Agrarias de Navarra y el MDE.
+        </i>
+      </b><br><br>
+    </div>
+    
+    <!-- FRAME VISOR -->
+    <div id="map">
+    <script>
+      
+      // establecimiento de sistema de coordenadas de referencia
+      var crs = new L.Proj.CRS('EPSG:25830', '+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs', {
+            resolutions: [2800, 1400, 700, 350, 175, 84, 42, 21, 11.2, 5.6, 2.8, 1.4, 0.7, 0.35, 0.14, 0.07],
+        });
+      
+      // creacion de visor y ajuste de los limites o bounds (acotado a la CFN)
+      var map = L.map('map', {
+            crs: crs,
+            continuousWorld: false,
+            worldCopyJump: false, 
+            zoomControl:true, maxZoom:10, minZoom:3
+        }).fitBounds([[41.85442469452565,-3.017336374170116],[43.354558758265505,-0.09064722548435214]]);
+        
+      // añadimos barra de escala
+      var scale_bar = L.control.scale(
+        {position:'topright'}
+      );
+      scale_bar.addTo(map);
+      
+      // añadimos atribución
+      var hash = new L.Hash(map);
+      map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="http://leafletjs.com" title="A JS library for interactive maps">Leaflet</a>');
+      L.control.locate({locateOptions: {maxZoom: 19}}).addTo(map);
+        
+      // insertamos barra de medida
+      var measureControl = new L.Control.Measure({
+            position: 'topright',
+            primaryLengthUnit: 'meters',
+            secondaryLengthUnit: 'kilometers',
+            primaryAreaUnit: 'sqmeters',
+            secondaryAreaUnit: 'hectares'
+        });
+        measureControl.addTo(map);
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0]
+        .innerHTML = '';
+        document.getElementsByClassName('leaflet-control-measure-toggle')[0]
+        .className += ' fas fa-ruler';
+      
+      // especificamos grupo de limites para los mapas
+      var bounds_group = new L.featureGroup([]);
+      function setBounds() {
+            map.setMaxBounds(map.getBounds());
+      }
+      // limites de la capa Modelo Digital de Elevaciones
+      var img_ModeloDigitaldeElevacionesMDE_0 = 'advanced_files/data/ModeloDigitaldeElevacionesMDE_0.png';
+      var img_bounds_ModeloDigitaldeElevacionesMDE_0 = [[41.836694619612366,-2.9288906069213865],[43.36337646230603,-0.15695361533601757]];
+      var layer_ModeloDigitaldeElevacionesMDE_0 = new L.imageOverlay(img_ModeloDigitaldeElevacionesMDE_0, img_bounds_ModeloDigitaldeElevacionesMDE_0);
+      bounds_group.addLayer(layer_ModeloDigitaldeElevacionesMDE_0);
+      map.addLayer(layer_ModeloDigitaldeElevacionesMDE_0);
+      
+      // funcion pop-up comarcas agrarias de navarra
+      function pop_ComarcasagrariasdeNavarra_1(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Nombre'] !== null ? Autolinker.link(String(feature.properties['Nombre'])) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Comarca'] !== null ? Autolinker.link(String(feature.properties['Comarca'])) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['mslink'] !== null ? Autolinker.link(String(feature.properties['mslink'])) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+      
+       // estilo para la capa de comarcas agrarias de navarra
+       function style_ComarcasagrariasdeNavarra_1_0() {
+            return {
+                pane: 'pane_ComarcasagrariasdeNavarra_1',
+                opacity: 0.4,                      // aplicamos transparencia
+                color: 'rgba(255,0,0,1.0)',    // color del contorno de la linea
+                dashArray: '',
+                lineCap: 'butt',
+                lineJoin: 'miter',
+                weight: 1, 
+                fill: true,
+                fillOpacity: 1,
+                fillColor: 'rgba(152,125,183,0.0)',
+            }
+        }
+      
+      // creacion de panel de leyenda para las comarcas agrarias de navarra
+      map.createPane('pane_ComarcasagrariasdeNavarra_1');
+      map.getPane('pane_ComarcasagrariasdeNavarra_1').style.zIndex = 401;
+      map.getPane('pane_ComarcasagrariasdeNavarra_1').style['mix-blend-mode'] = 'normal';
+      var layer_ComarcasagrariasdeNavarra_1 = new L.geoJson(json_ComarcasagrariasdeNavarra_1, {
+            attribution: '',
+            pane: 'pane_ComarcasagrariasdeNavarra_1',
+            onEachFeature: pop_ComarcasagrariasdeNavarra_1,
+            style: style_ComarcasagrariasdeNavarra_1_0,
+        });
+        bounds_group.addLayer(layer_ComarcasagrariasdeNavarra_1);
+        map.addLayer(layer_ComarcasagrariasdeNavarra_1);
+      
+      // funcion pop-up para la red de observatorios climaticos
+      function pop_Reddeobservatoriosclimticos_2(feature, layer) {
+          var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['INDICATIVO'] !== null ? Autolinker.link(String(feature.properties['INDICATIVO'])) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NOMBRE'] !== null ? Autolinker.link(String(feature.properties['NOMBRE'])) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['X'] !== null ? Autolinker.link(String(feature.properties['X'])) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['Y'] !== null ? Autolinker.link(String(feature.properties['Y'])) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MMÁX'] !== null ? Autolinker.link(String(feature.properties['MMÁX'])) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MMÍN'] !== null ? Autolinker.link(String(feature.properties['MMÍN'])) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['MMED'] !== null ? Autolinker.link(String(feature.properties['MMED'])) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['NOM_PROV'] !== null ? Autolinker.link(String(feature.properties['NOM_PROV'])) : '') + '</td>\
+                    </tr>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['TIPO'] !== null ? Autolinker.link(String(feature.properties['TIPO'])) : '') + '</td>\
+                    </tr>\
+                </table>';
+            layer.bindPopup(popupContent, {maxHeight: 400});
+        }
+
+      // estilo para la capa de observatorios climaticos
+      function style_Reddeobservatoriosclimticos_2_0(feature) {
+          switch(String(feature.properties['TIPO'])) {
+              case 'AUT':
+                  return {
+              pane: 'pane_Reddeobservatoriosclimticos_2',
+              radius: 4.0,
+              opacity: 1,
+              color: 'rgba(35,35,35,1.0)',
+              dashArray: '',
+              lineCap: 'butt',
+              lineJoin: 'miter',
+              weight: 1,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: 'rgba(51,160,44,1.0)',
+          }
+                  break;
+              case 'MAN':
+                  return {
+              pane: 'pane_Reddeobservatoriosclimticos_2',
+              radius: 4.0,
+              opacity: 1,
+              color: 'rgba(35,35,35,1.0)',
+              dashArray: '',
+              lineCap: 'butt',
+              lineJoin: 'miter',
+              weight: 1,
+              fill: true,
+              fillOpacity: 1,
+              fillColor: 'rgba(255,1,1,1.0)',
+          }
+                  break;
+          }
+      }
+      map.createPane('pane_Reddeobservatoriosclimticos_2');
+      map.getPane('pane_Reddeobservatoriosclimticos_2').style.zIndex = 402;
+      map.getPane('pane_Reddeobservatoriosclimticos_2').style['mix-blend-mode'] = 'normal';
+      
+      // nuevo objeto geoJson para la red de observatorios climaticos
+      var layer_Reddeobservatoriosclimticos_2 = new L.geoJson(json_Reddeobservatoriosclimticos_2, {
+          attribution: '',
+          pane: 'pane_Reddeobservatoriosclimticos_2',
+          onEachFeature: pop_Reddeobservatoriosclimticos_2,
+          pointToLayer: function (feature, latlng) {
+              var context = {
+                    feature: feature,
+                    variables: {}
+                };
+                return L.circleMarker(latlng, style_Reddeobservatoriosclimticos_2_0(feature));
+            },
+        });
+        bounds_group.addLayer(layer_Reddeobservatoriosclimticos_2);
+        map.addLayer(layer_Reddeobservatoriosclimticos_2);
+      
+      // añadimos controles de capas
+      var baseMaps = {};
+      L.control.layers(baseMaps,
+                       {'Red de observatorios climáticos<br/><table><tr><td style="text-align: center;"><img src="advanced_files/legend/Reddeobservatoriosclimticos_2_Automático0.png" /></td><td>Automático</td></tr><tr><td style="text-align: center;"><img src="advanced_files/legend/Reddeobservatoriosclimticos_2_Manual1.png" /></td><td>Manual</td></tr></table>':
+                        layer_Reddeobservatoriosclimticos_2,'<img src="advanced_files/legend/ComarcasagrariasdeNavarra_1.png" /> Comarcas agrarias de Navarra':
+                        layer_ComarcasagrariasdeNavarra_1,"Modelo Digital de Elevaciones (MDE)": layer_ModeloDigitaldeElevacionesMDE_0,}).addTo(map);
+      setBounds();
+      map.addControl(new L.Control.Search({
+          layer: layer_Reddeobservatoriosclimticos_2,
+          initial: false,
+          hideMarkerOnCollapse: true,
+          propertyName: 'INDICATIVO'}));
+      document.getElementsByClassName('search-button')[0].className +=
+       ' fa fa-binoculars';
+      L.ImageOverlay.include({
+          getBounds: function () {
+              return this._bounds;
+          }
+        });
+        </script>
+    </div>
+  </body>
+</html>
